@@ -20,6 +20,7 @@ The aim of this firmware and code is two-fold:
 - Cloud to device messages (supports sending a message to display on the screen)
 - Direct twin method calls (supports asking the device to play a rainbow sequence on the RGB LED)
 - LED status of network, Azure IoT send events, Azure IoT error events, and current device state (NORMAL=green, CAUTION=amber, DANGER=red)
+- here are for a test of commit
 
 ## The board and its features:
 
