@@ -5,4 +5,4 @@ if [ $? != 0 ]; then
 fi
 
 cd src
-python main.py
+python3 main.py

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
 # Copyright (c) Microsoft. All rights reserved.
@@ -25,7 +25,7 @@ from iotHub import IotHubClient
 from counter import SenseHatCounter
 
 GLOBAL_PROV_URI = "global.azure-devices-provisioning.net"
-ID_SCOPE =        "<scope id>" # put the scope id here
+ID_SCOPE =        "0ne00028F90" # put the scope id here
 
 SECURITY_DEVICE_TYPE = ProvisioningSecurityDeviceType.X509 # OR .SAS
 PROTOCOL = ProvisioningTransportProvider.MQTT
@@ -116,14 +116,14 @@ def register_device_callback(register_result, iothub_uri, device_id, user_contex
         iotHubClient.registerDesiredProperty("activateir", registeredMethods.irOnDesiredChange)
 
         while not kill_received:
-            print "reading sensors\n"
+            print ("reading sensors\n")
             globals.display.increment(1)
             sensorData = readSensors()
-            print "debug display\n"
+            print ("debug display\n")
             debugDisplay(sensorData)
-            print "send data\n"
+            print ("send data\n")
             sendDataToHub(sensorData)
-            print "display show\n"
+            print ("display show\n")
             globals.display.show()
 
             time.sleep(5)
