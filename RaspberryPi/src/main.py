@@ -12,10 +12,10 @@ import random
 import sys
 import signal
 import os
+import logger
 import configState
 import deviceState
 import utility
-import logger
 import registeredMethods
 import globals
 from provisioning_device_client import ProvisioningDeviceClient, ProvisioningTransportProvider, ProvisioningSecurityDeviceType, ProvisioningError, ProvisioningHttpProxyOptions
@@ -69,11 +69,10 @@ def readSensors():
     return dataPayload
 
 def register_status_callback(reg_status, user_context):
-    print ( "")
-    print ( "Register status callback: ")
-    print ( "reg_status = %s" % reg_status)
-    print ( "user_context = %s" % user_context)
-    print ( "")
+    log = logger.getLogger()
+    log.debug( "Register status callback: ")
+    log.debug( "reg_status = %s" % reg_status)
+    log.debug( "user_context = %s" % user_context)
     return
 
 
@@ -85,17 +84,16 @@ def register_device_callback(register_result, iothub_uri, device_id, user_contex
     global PROTOCOL
     global IOTHUB_DID
 
-    print ( "")
-    print ( "Register device callback: " )
-    print ( "   register_result = %s" % register_result)
-    print ( "   iothub_uri = %s" % iothub_uri)
-    print ( "   user_context = %s" % user_context)
+    log = logger.getLogger()
+    log.debug( "Register device callback: " )
+    log.debug( "   register_result = %s" % register_result)
+    log.debug( "   iothub_uri = %s" % iothub_uri)
+    log.debug( "   user_context = %s" % user_context)
     IOTHUB_URI = iothub_uri
     IOTHUB_DID = device_id
 
     if iothub_uri:
-        print ( "")
-        print ( "Device successfully registered!" )
+        log.debug( "Device successfully registered!" )
 
         iotHubClient = IotHubClient(IOTHUB_URI, IOTHUB_DID, False if SECURITY_DEVICE_TYPE == ProvisioningSecurityDeviceType.X509 else True)
 
@@ -116,22 +114,21 @@ def register_device_callback(register_result, iothub_uri, device_id, user_contex
         iotHubClient.registerDesiredProperty("activateir", registeredMethods.irOnDesiredChange)
 
         while not kill_received:
-            print ("reading sensors\n")
+            log.debug("reading sensors\n")
             globals.display.increment(1)
             sensorData = readSensors()
-            print ("debug display\n")
+            log.debug("debug display\n")
             debugDisplay(sensorData)
-            print ("send data\n")
+            log.debug("send data\n")
             sendDataToHub(sensorData)
-            print ("display show\n")
+            log.debug("display show\n")
             globals.display.show()
 
             time.sleep(5)
     else:
-        print ( "")
-        print ( "Device registration failed!" )
+        log.debug( "Device registration failed!" )
 
-    print ("done..")
+    log.debug("done..")
 
 
 def provision_device():
@@ -140,13 +137,14 @@ def provision_device():
     global SECURITY_DEVICE_TYPE
     global PROTOCOL
 
+    log = logger.getLogger()
     try:
         provisioning_client = ProvisioningDeviceClient(GLOBAL_PROV_URI, ID_SCOPE, SECURITY_DEVICE_TYPE, PROTOCOL)
 
         version_str = provisioning_client.get_version_string()
-        print ( "\nProvisioning API Version: %s\n" % version_str )
+        log.debug( "\nProvisioning API Version: %s\n" % version_str )
 
-        provisioning_client.set_option("logtrace", True)
+        provisioning_client.set_option("logtrace", False)
 
         provisioning_client.register_device(register_device_callback, None, register_status_callback, None)
 
@@ -159,10 +157,10 @@ def provision_device():
             input("Press Enter to interrupt...\n")
 
     except ProvisioningError as provisioning_error:
-        print ( "Unexpected error %s" % provisioning_error )
+        log.error( "Unexpected error %s" % provisioning_error )
         return
     except KeyboardInterrupt:
-        print ( "Provisioning Device Client sample stopped" )
+        log.error( "Provisioning Device Client sample stopped" )
 
 
 def sendDataToHub(data):
@@ -171,9 +169,10 @@ def sendDataToHub(data):
 
 def debugDisplay(data):
     if configState.config["debug"]:
-        logger.log("JSON payload to be sent:")
+        log = logger.getLogger()
+        log.debug("JSON payload to be sent:")
         jsonData = json.loads(data)
-        logger.log(json.dumps(jsonData, indent=4, sort_keys=True))
+        log.debug(json.dumps(jsonData, indent=4, sort_keys=True))
 
 
 def sendTelemetryStart():

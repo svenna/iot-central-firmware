@@ -39,13 +39,15 @@ class IotHubClient:
             self.client = self.iothub_client_init()
 
         except IoTHubError as iothub_error:
-            logger.log("Unexpected error {0} from IoTHub\n".format(iothub_error))
+            log = logger.getLogger()
+            log.error("Unexpected error {0} from IoTHub\n".format(iothub_error))
             return
 
 
     def iothub_client_init(self):
+        log = logger.getLogger()
         # prepare iothub client
-        print("- creating the client with {0} {1} {2} {3}", self.iothub_uri, self.device_id, self.security_type, self.protocol)
+        log.debug("- creating the client with {0} {1} {2} {3}".format(self.iothub_uri, self.device_id, self.security_type.name, self.protocol.name))
         client = IoTHubClient(self.iothub_uri, self.device_id, self.security_type, self.protocol)
 
         # set the time until a message times out
@@ -60,11 +62,11 @@ class IotHubClient:
         retryPolicy = IoTHubClientRetryPolicy.RETRY_INTERVAL
         retryInterval = 100
         client.set_retry_policy(retryPolicy, retryInterval)
-        logger.log("SetRetryPolicy to: retryPolicy = {0}".format(retryPolicy))
-        logger.log("SetRetryPolicy to: retryTimeoutLimitInSeconds = {0}".format(retryInterval))
+        log.info("SetRetryPolicy to: retryPolicy = {0}".format(retryPolicy))
+        log.info("SetRetryPolicy to: retryTimeoutLimitInSeconds = {0}".format(retryInterval))
         retryPolicyReturn = client.get_retry_policy()
-        logger.log("GetRetryPolicy returned: retryPolicy = {0}".format(retryPolicyReturn.retryPolicy))
-        logger.log("GetRetryPolicy returned: retryTimeoutLimitInSeconds = {0}\n".format(retryPolicyReturn.retryTimeoutLimitInSeconds))
+        log.info("GetRetryPolicy returned: retryPolicy = {0}".format(retryPolicyReturn.retryPolicy))
+        log.info("GetRetryPolicy returned: retryTimeoutLimitInSeconds = {0}\n".format(retryPolicyReturn.retryTimeoutLimitInSeconds))
 
         return client
 
@@ -78,23 +80,25 @@ class IotHubClient:
 
 
     def connection_status_callback(self, result, reason, user_context):
-        logger.log("Connection status changed[{0}] with:".format(user_context))
-        logger.log("    reason: {0}".format(reason))
-        logger.log("    result: {0}".format(result))
+        log = logger.getLogger()
+        log.info("Connection status changed[{0}] with:".format(user_context))
+        log.info("    reason: {0}".format(reason))
+        log.info("    result: {0}".format(result))
         self.connectionCallbackCount += 1
-        logger.log("    Total calls confirmed: {0}\n".format(self.connectionCallbackCount))
+        log.info("    Total calls confirmed: {0}\n".format(self.connectionCallbackCount))
 
 
     def receive_message_callback(self, message, counter):
+        log = logger.getLogger()
         message_buffer = message.get_bytearray()
         size = len(message_buffer)
-        logger.log("Received Message [{0}]:".format(counter))
-        logger.log("    Data: <<<{0}>>> & Size={1}".format(message_buffer[:size].decode('utf-8'), size))
+        log.info("Received Message [{0}]:".format(counter))
+        log.info("    Data: <<<{0}>>> & Size={1}".format(message_buffer[:size].decode('utf-8'), size))
         map_properties = message.properties()
         key_value_pair = map_properties.get_internals()
-        logger.log("    Properties: {0}".format(key_value_pair))
+        log.info("    Properties: {0}".format(key_value_pair))
         deviceState.incC2dCount()
-        logger.log("    Total calls received: {0}\n".format(deviceState.getC2dCount()))
+        log.info("    Total calls received: {0}\n".format(deviceState.getC2dCount()))
 
         # message format expected:
         # {
@@ -115,10 +119,11 @@ class IotHubClient:
 
 
     def send_reported_state_callback(self, status_code, user_context):
-        logger.log("Confirmation[{0}] for reported state received with:".format(user_context))
-        logger.log("    status_code: {0}".format(status_code))
+        log = logger.getLogger()
+        log.info("Confirmation[{0}] for reported state received with:".format(user_context))
+        log.info("    status_code: {0}".format(status_code))
         self.sendReportedStateCallbackCount += 1
-        logger.log("    Total calls confirmed: {0}".format(self.sendReportedStateCallbackCount))
+        log.info("    Total calls confirmed: {0}".format(self.sendReportedStateCallbackCount))
 
 
     def echoBackReported(self, propertyName, payload, status):
@@ -133,12 +138,13 @@ class IotHubClient:
 
 
     def device_twin_callback(self, update_state, payload, user_context):
-        logger.log("Twin callback called with:")
-        logger.log("updateStatus: {0}".format(update_state))
-        logger.log("context: {0}".format(user_context))
-        logger.log("payload: {0}".format(payload))
+        log = logger.getLogger()
+        log.info("Twin callback called with:")
+        log.info("updateStatus: {0}".format(update_state))
+        log.info("context: {0}".format(user_context))
+        log.info("payload: {0}".format(payload))
         deviceState.incDesiredCount()
-        logger.log("Total calls confirmed: {0}\n".format(deviceState.getDirectCount()))
+        log.info("Total calls confirmed: {0}\n".format(deviceState.getDirectCount()))
 
         # twin patch received
         if update_state == iothub_client.IoTHubTwinUpdateState.PARTIAL:
@@ -167,9 +173,10 @@ class IotHubClient:
 
 
     def device_method_callback(self, method_name, payload, user_context):
-        logger.log("\nMethod callback called with:\nmethodName = {0}\npayload = {1}\ncontext = {2}".format(method_name, payload, user_context))
+        log = logger.getLogger()
+        log.info("\nMethod callback called with:\nmethodName = {0}\npayload = {1}\ncontext = {2}".format(method_name, payload, user_context))
         deviceState.incDirectCount()
-        logger.log("Total calls confirmed: {0}".format(deviceState.getDirectCount()))
+        log.info("Total calls confirmed: {0}".format(deviceState.getDirectCount()))
 
         # message format expected:
         # {
@@ -195,14 +202,15 @@ class IotHubClient:
 
 
     def send_confirmation_callback(self, message, result, user_context):
-        logger.log("Confirmation[{0}] received for message with result = {1}".format(user_context, result))
+        log = logger.getLogger()
+        log.info("Confirmation[{0}] received for message with result = {1}".format(user_context, result))
         map_properties = message.properties()
-        logger.log("    message_id: {0}".format(message.message_id))
-        logger.log("    correlation_id: {0}".format(message.correlation_id))
+        log.info("    message_id: {0}".format(message.message_id))
+        log.info("    correlation_id: {0}".format(message.correlation_id))
         key_value_pair = map_properties.get_internals()
-        logger.log("    Properties: {0}".format(key_value_pair))
+        log.info("    Properties: {0}".format(key_value_pair))
         self.sendCallbackCount += 1
-        logger.log("    Total calls confirmed: {0}\n".format(self.sendCallbackCount))
+        log.info("    Total calls confirmed: {0}\n".format(self.sendCallbackCount))
 
 
     def send_message(self, payload):
@@ -223,3 +231,4 @@ class IotHubClient:
         self.client.send_reported_state(reportedPayload, len(reportedPayload), self.send_reported_state_callback, deviceState.getReportedCount())
         deviceState.incReportedCount()
         deviceState.patchLastTwin(reportedPayload, False)
+        

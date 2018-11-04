@@ -6,7 +6,8 @@ import logger
 
 def dump():
     global config
-    logger.log(json.dumps(config, indent=4, sort_keys=True))
+    log = logger.getLogger()
+    log.debug(json.dumps(config, indent=4, sort_keys=True))
 
 def save():
     global config
