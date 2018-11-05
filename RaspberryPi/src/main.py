@@ -12,6 +12,8 @@ import random
 import sys
 import signal
 import os
+from urllib.request import urlopen
+from urllib.error import URLError
 import logger
 import configState
 import deviceState
@@ -136,6 +138,7 @@ def provision_device():
     global ID_SCOPE
     global SECURITY_DEVICE_TYPE
     global PROTOCOL
+    global kill_received
 
     log = logger.getLogger()
     try:
@@ -148,13 +151,18 @@ def provision_device():
 
         provisioning_client.register_device(register_device_callback, None, register_status_callback, None)
 
-        try:
-            # Try Python 2.xx first
-            raw_input("Press Enter to interrupt...\n")
-        except:
-            pass
-            # Use Python 3.xx in the case of exception
-            input("Press Enter to interrupt...\n")
+        # try:
+        #     # Try Python 2.xx first
+        #     raw_input("Press Enter to interrupt...\n")
+        # except:
+        #     pass
+        #     # Use Python 3.xx in the case of exception
+        #     input("Press Enter to interrupt...\n")
+        # log.debug("sleeping for DPS")
+        # import time; time.sleep(10)
+        # log.debug("done sleeping for DPS")
+        while not kill_received:
+            time.sleep(1)
 
     except ProvisioningError as provisioning_error:
         log.error( "Unexpected error %s" % provisioning_error )
@@ -319,9 +327,19 @@ def showIPOnDisplay(showIp):
         if deviceState.getIPaddress()[1] != "127.0.0.1" and deviceState.getIPaddress()[1] != "0.0.0.0": # check to see if loop back or not assigned
             globals.sense.show_message("Ethernet IP: {0}".format(deviceState.getIPaddress()[1]), text_colour=[0,255,0])
 
+
+def wait_for_internet_connection():
+    while True:
+        try:
+            response = urlopen('https://www.google.com',timeout=1)
+            return
+        except URLError:
+            pass
+
 def main():
         #initialize logging
         logger.init()
+        log = logger.getLogger()
 
         # pull in the saved config
         configState.init()
@@ -329,6 +347,9 @@ def main():
         # initialize globals
         globals.init()
 
+        log.info("Waiting for internet")
+        wait_for_internet_connection()
+        log.info("Internet is available")
         wlan0Ip = utility.getIpAddress('wlan0')
         eth0Ip = utility.getIpAddress('eth0')
 
